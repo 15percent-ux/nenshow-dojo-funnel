@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>年商道場 ファネルマップ</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:        #0f0f13;
+      --surface:   #1a1a22;
+      --surface2:  #1e1b2e;
+      --gold:      #c8a46a;
+      --gold-dim:  rgba(200,164,106,0.2);
+      --gold-line: rgba(200,164,106,0.5);
+      --purple:    #9a75dd;
+      --purple-dim:rgba(154,117,221,0.15);
+      --green:     #48bb78;
+      --green-dim: rgba(72,187,120,0.12);
+      --blue:      #63b3ed;
+      --blue-dim:  rgba(99,179,237,0.12);
+      --orange:    #f6ad55;
+      --orange-dim:rgba(246,173,85,0.12);
+      --red:       #fc8181;
+      --red-dim:   rgba(252,129,129,0.12);
+      --muted:     #7a756c;
+      --text:      #e8e4dd;
+      --text-mid:  #b0ab9f;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      padding: 40px 24px 80px;
+      line-height: 1.6;
+    }
+
+    /* ========== HEADER ========== */
+    .header { text-align: center; margin-bottom: 56px; }
+    .header h1 { font-size: 1.3rem; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 6px; }
+    .header p  { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.1em; }
+
+    /* ========== SECTION TITLES ========== */
+    .sec-title {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 14px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--gold-dim);
+    }
+
+    /* ========== CARD ========== */
+    .card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 16px 16px;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    .card + .card { margin-top: 10px; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-bottom: 7px;
+      font-weight: 700;
+    }
+    .tag-gold   { background: var(--gold-dim);   color: var(--gold);   border: 1px solid var(--gold-line); }
+    .tag-purple { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(154,117,221,0.4); }
+    .tag-green  { background: var(--green-dim);  color: var(--green);  border: 1px solid rgba(72,187,120,0.3); }
+    .tag-blue   { background: var(--blue-dim);   color: var(--blue);   border: 1px solid rgba(99,179,237,0.3); }
+    .tag-orange { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(246,173,85,0.3); }
+    .tag-red    { background: var(--red-dim);    color: var(--red);    border: 1px solid rgba(252,129,129,0.3); }
+
+    .card-title { font-size: 0.92rem; font-weight: 700; margin-bottom: 5px; }
+    .card-body  { font-size: 0.74rem; color: var(--text-mid); line-height: 1.8; }
+    .card-body strong { color: var(--text); }
+
+    /* ========== ARROW ========== */
+    .arrow-v {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 0;
+      gap: 0;
+    }
+    .arrow-v .line {
+      width: 2px;
+      height: 18px;
+      background: var(--gold-line);
+    }
+    .arrow-v .head {
+      width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid var(--gold-line);
+    }
+    .arrow-v .label {
+      font-size: 0.6rem;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      margin: 4px 0;
+    }
+
+    .arrow-h-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+    .arrow-h {
+      height: 2px;
+      flex: 1;
+      background: linear-gradient(to right, var(--gold-dim), var(--gold-line));
+      position: relative;
+    }
+    .arrow-h::after {
+      content: '';
+      position: absolute;
+      right: -1px; top: -5px;
+      border-top: 6px solid transparent;
+      border-bottom: 6px solid transparent;
+      border-left: 8px solid var(--gold-line);
+    }
+
+    /* ========== LAYOUT ========== */
+    .page { max-width: 1200px; margin: 0 auto; }
+
+    /* === ZONE: 初回 === */
+    .zone-first {
+      background: rgba(246,173,85,0.04);
+      border: 1px solid rgba(246,173,85,0.2);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 40px;
+      position: relative;
+    }
+    .zone-label {
+      position: absolute;
+      top: -11px; left: 20px;
+      background: var(--bg);
+      padding: 0 10px;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      color: var(--orange);
+      font-weight: 700;
+    }
+    .first-grid {
+      display: grid;
+      grid-template-columns: 1fr 60px 1fr 60px 1fr;
+      gap: 0;
+      align-items: center;
+    }
+
+    /* === ZONE: 通常フロー === */
+    .zone-normal {
+      background: rgba(154,117,221,0.03);
+      border: 1px solid rgba(154,117,221,0.15);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 40px;
+      position: relative;
+    }
+    .normal-grid {
+      display: grid;
+      grid-template-columns: 1fr 60px 1fr 60px 1fr;
+      gap: 0;
+      align-items: center;
+    }
+
+    /* === ZONE: 独立コンテンツ === */
+    .zone-independent {
+      background: rgba(99,179,237,0.03);
+      border: 1px solid rgba(99,179,237,0.15);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 40px;
+      position: relative;
+    }
+    .indie-grid {
+      display: grid;
+      grid-template-columns: 1fr 60px 1fr;
+      gap: 0;
+      align-items: center;
+    }
+
+    /* === オーディションA詳細 === */
+    .zone-audition {
+      background: rgba(200,164,106,0.04);
+      border: 1px solid rgba(200,164,106,0.25);
+      border-radius: 20px;
+      padding: 24px;
+      position: relative;
+    }
+    .audition-content-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .audition-item {
+      background: rgba(255,255,255,0.03);
+      border-radius: 10px;
+      padding: 14px 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .audition-item .ai-icon { font-size: 1.4rem; margin-bottom: 6px; }
+    .audition-item .ai-title { font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; }
+    .audition-item .ai-desc  { font-size: 0.7rem; color: var(--text-mid); line-height: 1.7; }
+
+    .price-badge {
+      display: inline-block;
+      background: var(--gold-dim);
+      border: 1px solid var(--gold-line);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--gold);
+      margin-top: 10px;
+    }
+
+    .note {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 6px;
+      border-left: 2px solid var(--gold-dim);
+    }
+
+    /* hub card */
+    .hub-card {
+      background: var(--surface2);
+      border: 1px solid rgba(154,117,221,0.4);
+      border-radius: 14px;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .hub-card .hub-title { font-size: 1rem; font-weight: 700; margin-bottom: 3px; }
+    .hub-card .hub-free  { font-size: 0.65rem; color: var(--green); letter-spacing: 0.1em; margin-bottom: 14px; }
+    .hub-feature {
+      background: rgba(255,255,255,0.04);
+      border-radius: 7px;
+      padding: 8px 10px;
+      margin-bottom: 7px;
+      text-align: left;
+    }
+    .hub-feature:last-child { margin-bottom: 0; }
+    .hf-label { font-size: 0.6rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 3px; }
+    .hf-text  { font-size: 0.72rem; color: var(--text-mid); }
+
+    /* backend card */
+    .backend-card {
+      background: #1c1a14;
+      border: 1px solid rgba(200,164,106,0.4);
+      border-radius: 14px;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .backend-card .bc-title { font-size: 0.9rem; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+    .backend-card .bc-price { font-size: 1.5rem; font-weight: 700; color: var(--gold); margin: 8px 0 2px; }
+    .backend-card .bc-sub   { font-size: 0.68rem; color: var(--muted); margin-bottom: 12px; }
+    .bc-row {
+      background: var(--gold-dim);
+      border-radius: 6px;
+      padding: 7px 10px;
+      margin-bottom: 6px;
+      font-size: 0.7rem;
+      color: var(--text-mid);
+      text-align: left;
+    }
+    .bc-row strong { color: var(--gold); }
+
+    /* 2nd round note */
+    .second-note {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: rgba(246,173,85,0.06);
+      border: 1px dashed rgba(246,173,85,0.3);
+      border-radius: 8px;
+      font-size: 0.68rem;
+      color: var(--orange);
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1>年商道場 ファネルマップ</h1>
+    <p>オーナー：阪田真臣　／　SNSアドバイザー：白石</p>
+  </div>
+
+
+  <!-- ========== ZONE 1: 初回リリース ========== -->
+  <div class="zone-first">
+    <div class="zone-label">★ 初回リリース限定ルート</div>
+    <div class="sec-title">桂子ちゃんオプチャ（400名）→ 初回2商材を案内</div>
+
+    <div class="first-grid">
+
+      <!-- 桂子ちゃんオプチャ -->
+      <div>
+        <div class="card" style="border-color:rgba(246,173,85,0.35);">
+          <span class="tag tag-orange">桂子ちゃんコミュニティ</span>
+          <div class="card-title">桂子ちゃん オプチャ</div>
+          <div class="card-body">
+            メンバー：約 <strong>400名</strong><br>
+            年商道場 初リリース記念として<br>
+            下記2商材を案内する
+          </div>
+        </div>
+      </div>
+
+      <!-- 矢印 -->
+      <div class="arrow-h-wrap"><div class="arrow-h"></div></div>
+
+      <!-- 2商材 -->
+      <div>
+        <div class="card" style="border-color:rgba(200,164,106,0.35);">
+          <span class="tag tag-gold">商材①</span>
+          <div class="card-title">年商道場コンサル</div>
+          <div class="card-body">
+            定員 <strong>20名</strong><br>
+            8万円 × 6ヶ月
+          </div>
+        </div>
+        <div class="card" style="margin-top:10px; border-color:rgba(154,117,221,0.45);">
+          <span class="tag tag-purple">商材② 1名のみ</span>
+          <div class="card-title">オーディションA企画</div>
+          <div class="card-body">
+            桂子ちゃんコミュニティ内から<br>
+            <strong>1名を選考・採用</strong><br>
+            本気プロデュース3ヶ月
+          </div>
+        </div>
+      </div>
+
+      <!-- 矢印 -->
+      <div class="arrow-h-wrap"><div class="arrow-h"></div></div>
+
+      <!-- 結果 -->
+      <div>
+        <div class="backend-card">
+          <div class="bc-title">初回収益ゾーン</div>
+          <div class="bc-price">最大 960万円</div>
+          <div class="bc-sub">20名 × 48万円（コンサル）</div>
+          <div class="bc-row"><strong>＋</strong> オーディションA 1名採用</div>
+        </div>
+        <div class="second-note">
+          2回目以降のコンサル募集は<br>
+          公式LINE・年商道場オプチャから<br>
+          ※初回反応次第でオーディション第2弾も検討
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ========== ZONE 2: 通常フロー ========== -->
+  <div class="zone-normal">
+    <div class="zone-label">通常フロー（2回目以降・継続運用）</div>
+    <div class="sec-title">公式LINE@ → 年商道場オプチャ → コンサル（半年毎）</div>
+
+    <div class="normal-grid">
+
+      <!-- 公式LINE -->
+      <div>
+        <div class="card" style="border-color:rgba(72,187,120,0.35);">
+          <span class="tag tag-green">集客</span>
+          <div class="card-title">年商道場 公式LINE@</div>
+          <div class="card-body">
+            ・Zoomフィードバック会（定期配信）<br>
+            ・フレームワークシート配布<br>
+            ・コンテンツ発信で関係構築<br>
+            <strong>→ オプチャへ誘導</strong><br>
+            （人数増・コミュニティ醸成が目的）
+          </div>
+        </div>
+      </div>
+
+      <!-- 矢印 -->
+      <div class="arrow-h-wrap"><div class="arrow-h"></div></div>
+
+      <!-- オプチャ -->
+      <div>
+        <div class="hub-card">
+          <div class="hub-title">年商道場 オプチャ</div>
+          <div class="hub-free">参加費：無料</div>
+          <div class="hub-feature">
+            <div class="hf-label">コンテンツ</div>
+            <div class="hf-text">SNS・プロフィール設計など質問自由</div>
+          </div>
+          <div class="hub-feature">
+            <div class="hf-label">月1回 定期イベント</div>
+            <div class="hf-text">SNSフィードバック会（白石 アドバイザー）</div>
+          </div>
+          <div class="hub-feature">
+            <div class="hf-label">目的</div>
+            <div class="hf-text">信頼構築・関係醸成 → アップセル土台</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 矢印 -->
+      <div class="arrow-h-wrap"><div class="arrow-h"></div></div>
+
+      <!-- バックエンド -->
+      <div>
+        <div class="backend-card">
+          <div class="bc-title">バックエンド</div>
+          <div class="bc-price">¥80,000<span style="font-size:0.9rem">/月</span></div>
+          <div class="bc-sub">× 6ヶ月 ＝ 48万円　定員20名</div>
+          <div class="bc-row"><strong>半年毎</strong>にオプチャ内で募集</div>
+          <div class="bc-row"><strong>アップセル・クロスセル</strong>も展開</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ========== ZONE 3: 独立コンテンツ ========== -->
+  <div class="zone-independent">
+    <div class="zone-label">独立コンテンツ（別経路）</div>
+    <div class="sec-title">ウサギとカメ Podcast ← 公式LINE@と接続</div>
+
+    <div class="indie-grid">
+
+      <div>
+        <div class="card" style="border-color:rgba(99,179,237,0.35);">
+          <span class="tag tag-blue">独立コンテンツ</span>
+          <div class="card-title">🐇🐢 うさカメラジオ（Podcast）</div>
+          <div class="card-body">
+            ウサギ（白石）× カメ（阪田臣）<br>
+            Aさんの公開プロデュース3ヶ月を配信<br>
+            <strong>独立したコンテンツポジション</strong><br>
+            ファネルの流れとは別経路
+          </div>
+        </div>
+      </div>
+
+      <!-- 矢印 双方向 -->
+      <div style="display:flex;align-items:center;justify-content:center;padding:0 4px;">
+        <div style="width:100%;position:relative;">
+          <div style="height:2px;background:linear-gradient(to right,rgba(99,179,237,0.4),rgba(72,187,120,0.5));"></div>
+          <div style="position:absolute;left:-1px;top:-5px;border-top:6px solid transparent;border-bottom:6px solid transparent;border-right:8px solid rgba(99,179,237,0.5);"></div>
+          <div style="position:absolute;right:-1px;top:-5px;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:8px solid rgba(72,187,120,0.5);"></div>
+          <div style="text-align:center;font-size:0.6rem;color:var(--muted);margin-top:5px;">公式LINEと接続</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" style="border-color:rgba(72,187,120,0.35);">
+          <span class="tag tag-green">接続先</span>
+          <div class="card-title">年商道場 公式LINE@</div>
+          <div class="card-body">
+            Podcastリスナーを<br>
+            <strong>公式LINEへ誘導</strong>し<br>
+            年商道場コミュニティへ動員する
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ========== ZONE 4: オーディションA詳細 ========== -->
+  <div class="zone-audition">
+    <div class="zone-label">オーディションA企画 詳細</div>
+
+    <!-- 上段：提供コンテンツ -->
+    <div class="sec-title">提供コンテンツ — セット内容</div>
+    <div class="audition-content-grid" style="margin-bottom:28px;">
+
+      <div class="audition-item">
+        <div class="ai-icon">🏛️</div>
+        <div class="ai-title">年商道場 コンサルプロデュース</div>
+        <div class="ai-desc">阪田臣による事業・マーケティングの本質プロデュース</div>
+      </div>
+
+      <div class="audition-item">
+        <div class="ai-icon">📱</div>
+        <div class="ai-title">白石 SNS添削＆ノウハウ提供</div>
+        <div class="ai-desc">SNSマーケター白石による添削・ノウハウ・戦略提供</div>
+      </div>
+
+      <div class="audition-item">
+        <div class="ai-icon">⛺</div>
+        <div class="ai-title">強化合宿</div>
+        <div class="ai-desc">集中プロデュースのための合宿セット</div>
+      </div>
+
+      <div class="audition-item">
+        <div class="ai-icon">🎙️</div>
+        <div class="ai-title">うさカメ Podcast 公開プロデュース</div>
+        <div class="ai-desc">3ヶ月間の変化をPodcastで公開配信。リスナーが当事者として追う</div>
+      </div>
+
+    </div>
+
+    <!-- 下段：Aさんが得られる価値 -->
+    <div class="sec-title">Aさんが得られる価値</div>
+    <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-bottom:20px;">
+
+      <div class="audition-item" style="border-color:rgba(200,164,106,0.3);">
+        <div class="ai-icon">💰</div>
+        <div class="ai-title" style="color:var(--gold);">SNSコンサル</div>
+        <div class="ai-desc">
+          通常 <strong style="color:var(--gold);">月額10万円</strong> の<br>
+          SNSコンサルが含まれる
+        </div>
+      </div>
+
+      <div class="audition-item" style="border-color:rgba(200,164,106,0.3);">
+        <div class="ai-icon">✨</div>
+        <div class="ai-title" style="color:var(--gold);">ブランディングプロデュース</div>
+        <div class="ai-desc">
+          通常 <strong style="color:var(--gold);">月額8万円</strong> の<br>
+          年商道場プロデュースが含まれる
+        </div>
+      </div>
+
+      <div class="audition-item" style="border-color:rgba(154,117,221,0.3);">
+        <div class="ai-icon">📣</div>
+        <div class="ai-title" style="color:var(--purple);">麹王子SNSでシェア</div>
+        <div class="ai-desc">
+          合計 <strong style="color:var(--purple);">フォロワー2万人</strong> への<br>
+          シェア・拡散
+        </div>
+      </div>
+
+      <div class="audition-item" style="border-color:rgba(246,173,85,0.3);">
+        <div class="ai-icon">👥</div>
+        <div class="ai-title" style="color:var(--orange);">桂子ちゃんコミュニティでシェア</div>
+        <div class="ai-desc">
+          400名のオプチャで<br>
+          認知・応援を獲得
+        </div>
+      </div>
+
+      <div class="audition-item" style="border-color:rgba(72,187,120,0.3);">
+        <div class="ai-icon">❤️‍🔥</div>
+        <div class="ai-title" style="color:var(--green);">コアファン獲得</div>
+        <div class="ai-desc">
+          3ヶ月の公開プロデュースで<br>
+          自分のコアなファンを獲得
+        </div>
+      </div>
+
+      <div class="audition-item" style="border-color:rgba(72,187,120,0.3);">
+        <div class="ai-icon">🧠</div>
+        <div class="ai-title" style="color:var(--green);">3名の起業家から添削</div>
+        <div class="ai-desc">
+          セルフプロデュースを<br>
+          3名の起業家から直接添削を受けられる
+        </div>
+      </div>
+
+      <div class="audition-item" style="border-color:rgba(99,179,237,0.3); grid-column: span 2;">
+        <div class="ai-icon">🎙️</div>
+        <div class="ai-title" style="color:var(--blue);">うさカメ Podcast で露出・拡散</div>
+        <div class="ai-desc">
+          ウサギとカメの番組に出演し、変化の過程がコンテンツとして配信される。<br>
+          リスナーがAさんのファンになる仕組み。
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 金額まとめ -->
+    <div style="background:rgba(200,164,106,0.06); border:1px solid rgba(200,164,106,0.3); border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; margin-bottom:14px;">
+      <div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:3px;">通常換算の合計価値（月額）</div>
+        <div style="font-size:1.4rem;font-weight:700;color:var(--gold);">月18万円相当 × 3ヶ月</div>
+      </div>
+      <div style="width:1px;height:40px;background:rgba(200,164,106,0.2);"></div>
+      <div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:3px;">期間</div>
+        <div style="font-size:0.9rem;font-weight:700;color:var(--text);">3ヶ月 本気プロデュース</div>
+      </div>
+      <div style="width:1px;height:40px;background:rgba(200,164,106,0.2);"></div>
+      <div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:3px;">採用人数</div>
+        <div style="font-size:0.9rem;font-weight:700;color:var(--purple);">1名のみ</div>
+      </div>
+      <div style="width:1px;height:40px;background:rgba(200,164,106,0.2);"></div>
+      <div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:3px;">選考母体</div>
+        <div style="font-size:0.9rem;font-weight:700;color:var(--orange);">桂子ちゃんオプチャ（400名）</div>
+      </div>
+    </div>
+
+    <div class="note">
+      ※ 白石さんのTikTok動画10本プロデュースプランは別途オプション
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
